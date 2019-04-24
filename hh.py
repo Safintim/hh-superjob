@@ -1,14 +1,15 @@
 import requests
 import os
 from dotenv import load_dotenv
+import json
 
 
 def get_predict_salary(from_salary, to_salary):
     if from_salary and to_salary:
         expected_salary = (from_salary + to_salary) / 2
-    elif from_salary and to_salary is None:
+    elif from_salary and not to_salary:
         expected_salary = from_salary * 1.2
-    elif to_salary and from_salary is None:
+    elif to_salary and not from_salary:
         expected_salary = to_salary * 0.8
     else:
         expected_salary = None
@@ -44,15 +45,17 @@ def create_dict_language(language, vac_found, vac_processed, avg_salary):
     return dict_result
 
 
-def calculation_salaries_vacancies(vacancies):
+def calculation_salaries_vacancies_hh(vacancies):
     return [get_predict_rub_salary_hh(vacancy) for vacancy in vacancies]
 
 
-def get_statistics_language(api_url, language):
+def calculation_salaries_vacancies_sj(vacancies):
+    return [get_predict_rub_salary_sj(vacancy) for vacancy in vacancies]
+
+
+def get_statistics_language_hh(api_url, language):
 
     vacancies_found = 0
-    vacancies_processed = 0
-    average_salary = 0
     all_salaries_vacancies = []
 
     page = 0
@@ -64,13 +67,16 @@ def get_statistics_language(api_url, language):
         page += 1
         vacancies_language = response['items']
 
-        all_salaries_vacancies.extend(calculation_salaries_vacancies(vacancies_language))
+        all_salaries_vacancies.extend(calculation_salaries_vacancies_hh(vacancies_language))
 
         vacancies_found = response['found']
 
     is_salary = list(filter(lambda x: x is not None, all_salaries_vacancies))
-    vacancies_processed += len(is_salary)
-    average_salary += sum(is_salary) // vacancies_processed
+    vacancies_processed = len(is_salary)
+    if vacancies_processed:
+        average_salary = sum(is_salary) // vacancies_processed
+    else:
+        average_salary = 0
 
     return create_dict_language(language, vacancies_found, vacancies_processed, average_salary)
 
@@ -79,14 +85,14 @@ def hh(programming_languages):
     api_url = 'https://api.hh.ru/vacancies?'
     d = {}
     for language in programming_languages:
-        d.update(get_statistics_language(api_url, language))
+        d.update(get_statistics_language_hh(api_url, language))
 
     print(d)
 
 
 def get_predict_rub_salary_sj(vacancy):
-    if vacancy['salary'] and vacancy['salary']['currency'] == 'RUR':
-        return get_predict_salary(vacancy['salary']['from'], vacancy['salary']['to'])
+    if vacancy['currency'] == 'rub':
+        return get_predict_salary(vacancy['payment_from'], vacancy['payment_to'])
     return None
 
 
@@ -96,19 +102,64 @@ def provide_headers_sj(secret_key):
     }
 
 
-def provide_params_sj():
+def provide_params_sj(text=''):
     return {
-        'towns': 4,
-        'catalogues': 48
+        'town': 4,
+        'catalogues': 48,
+        'count': 100,
+        'keyword': text,
     }
+
+
+def get_statistics_language_sj(api_url, secret_key, language):
+    vacancies_found = 0
+    all_salaries_vacancies = []
+
+    page = 0
+    number_pages = 100
+    while page < number_pages:
+
+        response = requests.get(api_url,
+                                headers=provide_headers_sj(secret_key),
+                                params=provide_params_sj(text=language))
+        page += 100
+        number_pages = response.json()['total']
+        vacancies_found = response.json()['total']
+        vacancies_language = response.json()['objects']
+        all_salaries_vacancies.extend(calculation_salaries_vacancies_sj(vacancies_language))
+
+    is_salary = list(filter(lambda x: x is not None, all_salaries_vacancies))
+    vacancies_processed = len(is_salary)
+
+    if vacancies_processed:
+        average_salary = sum(is_salary) // vacancies_processed
+    else:
+        average_salary = 0
+
+    return create_dict_language(language, vacancies_found, vacancies_processed, average_salary)
 
 
 def superjob(secret_key, programming_languages=None):
     api_url = 'https://api.superjob.ru/2.0/vacancies/'
-    response = requests.get(api_url, headers=provide_headers_sj(secret_key), params=provide_params_sj())
-    for i in response.json()['objects']:
-        print(i)
-        # print(i['profession'], i['town']['title'])
+    d = {}
+    language = 'javascript'
+    for language in programming_languages:
+        d.update(get_statistics_language_sj(api_url, secret_key, language))
+
+    print(d)
+    # response = requests.get(api_url,
+    #                         headers=provide_headers_sj(secret_key),
+    #                         params=provide_params_sj(text=language))
+
+    # print(response.url)
+    # print(response.json())
+    # print(response.json()['total'])
+    #
+    # for i in response.json()['objects']:
+    #     print(i['profession'], i['town']['title'])
+    # print(json.dumps(response.json(), sort_keys=True, indent=4))
+    # for language in programming_languages:
+    #     d.update(get_statistics_language_sj(api_url, secret_key, language))
 
 
 def main():
