@@ -163,15 +163,12 @@ def create_table(title, statistics_languages):
 def main():
     load_dotenv()
     secret_key = os.getenv('SECRET_KEY')
-
     programming_languages = ['Javascript', 'Java', 'Python', 'Ruby', 'Php', 'C++', 'C#', 'C', 'Go', 'Scala']
-    # programming_languages = ['Scala']
-    # hh(programming_languages)
+
     hh_d = hh(programming_languages)
     sj_d = superjob(secret_key, programming_languages)
     create_table('HeadHunter', hh_d)
     create_table('SuperJob', sj_d)
-    # superjob(secret_key, programming_languages)
 
 
 if __name__ == '__main__':
