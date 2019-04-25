@@ -52,11 +52,12 @@ def provide_headers_sj(secret_key):
     }
 
 
-def provide_params_sj(text=''):
+def provide_params_sj(page, text=''):
     return {
         'town': 4,
         'catalogues': 48,
-        'count': 100,
+        'count': 20,
+        'page': page,
         'keyword': text,
     }
 
@@ -102,14 +103,14 @@ def get_statistics_language_sj(api_url, secret_key, language):
     all_salaries_vacancies = []
 
     page = 0
-    number_pages = 100
-    while page < number_pages:
+    more = True
+    while more:
 
         response = requests.get(api_url,
                                 headers=provide_headers_sj(secret_key),
-                                params=provide_params_sj(text=language))
-        page += 100
-        number_pages = response.json()['total']
+                                params=provide_params_sj(page, text=language))
+        page += 1
+        more = response.json()['more']
         vacancies_found = response.json()['total']
         vacancies_language = response.json()['objects']
         all_salaries_vacancies.extend(calculation_salaries_vacancies_sj(vacancies_language))
@@ -160,7 +161,7 @@ def main():
     secret_key = os.getenv('SECRET_KEY')
     programming_languages = ['Javascript', 'Java', 'Python', 'Ruby', 'Php', 'C++', 'C#', 'C', 'Go', 'Scala']
 
-    create_table('HeadHunter', hh(programming_languages))
+    # create_table('HeadHunter', hh(programming_languages))
     create_table('SuperJob', superjob(secret_key, programming_languages))
 
 
