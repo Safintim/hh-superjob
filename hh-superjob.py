@@ -101,16 +101,13 @@ def get_statistics_language_sj(api_url, secret_key, language):
     vacancies_found = 0
     all_salaries_vacancies = []
 
-    response = requests.get(api_url,
-                            headers=provide_headers_sj(secret_key),
-                            params=provide_params_sj(text=language))
-
-
     page = 0
     number_pages = 100
     while page < number_pages:
 
-
+        response = requests.get(api_url,
+                                headers=provide_headers_sj(secret_key),
+                                params=provide_params_sj(text=language))
         page += 100
         number_pages = response.json()['total']
         vacancies_found = response.json()['total']
