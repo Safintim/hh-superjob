@@ -56,7 +56,7 @@ def provide_params_sj(page, text=''):
     return {
         'town': 4,
         'catalogues': 48,
-        'count': 20,
+        'count': 100,
         'page': page,
         'keyword': text,
     }
