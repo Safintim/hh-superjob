@@ -161,7 +161,7 @@ def main():
     secret_key = os.getenv('SECRET_KEY')
     programming_languages = ['Javascript', 'Java', 'Python', 'Ruby', 'Php', 'C++', 'C#', 'C', 'Go', 'Scala']
 
-    # create_table('HeadHunter', hh(programming_languages))
+    create_table('HeadHunter', hh(programming_languages))
     create_table('SuperJob', superjob(secret_key, programming_languages))
 
 
