@@ -30,8 +30,8 @@ def get_predict_rub_salary_sj(vacancy):
 def provide_params_hh(page, text=''):
     return {
         'text': 'Программист {}'.format(text),
-        'area': 1,
-        'period': 30,
+        'area': 1,  # Moscow
+        'period': 30,  # last month
         'page': page
     }
 
@@ -44,9 +44,9 @@ def provide_headers_sj(secret_key):
 
 def provide_params_sj(page, text=''):
     return {
-        'town': 4,
-        'catalogues': 48,
-        'count': 100,
+        'town': 4,  # Moscow
+        'catalogues': 48,  # Develop, programing
+        'count': 100,  # vacancies on page
         'page': page,
         'keyword': text,
     }
@@ -96,7 +96,6 @@ def get_statistics_language_sj(api_url, secret_key, language):
     page = 0
     more = True
     while more:
-
         response = requests.get(api_url,
                                 headers=provide_headers_sj(secret_key),
                                 params=provide_params_sj(page, text=language))
@@ -118,7 +117,7 @@ def get_statistics_language_sj(api_url, secret_key, language):
     return create_dict_language_statistics(language, vacancies_found, vacancies_processed, average_salary)
 
 
-def hh(programming_languages):
+def get_data_from_head_hunter(programming_languages):
     api_url = 'https://api.hh.ru/vacancies?'
     dict_languages_statistics = {}
     for language in programming_languages:
@@ -127,7 +126,7 @@ def hh(programming_languages):
     return dict_languages_statistics
 
 
-def superjob(secret_key, programming_languages):
+def get_data_from_superjob(secret_key, programming_languages):
     api_url = 'https://api.superjob.ru/2.0/vacancies/'
     dict_languages_statistics = {}
     for language in programming_languages:
@@ -153,8 +152,8 @@ def main():
     secret_key = os.getenv('SECRET_KEY')
     programming_languages = ['Javascript', 'Java', 'Python', 'Ruby', 'Php', 'C++', 'C#', 'C', 'Go', 'Scala']
 
-    create_table('HeadHunter', hh(programming_languages))
-    create_table('SuperJob', superjob(secret_key, programming_languages))
+    create_table('HeadHunter', get_data_from_head_hunter(programming_languages))
+    create_table('SuperJob', get_data_from_superjob(secret_key, programming_languages))
 
 
 if __name__ == '__main__':
