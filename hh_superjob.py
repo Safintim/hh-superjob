@@ -20,13 +20,11 @@ def get_predict_salary(from_salary, to_salary):
 def get_predict_rub_salary_hh(vacancy):
     if vacancy['salary'] and vacancy['salary']['currency'] == 'RUR':
         return get_predict_salary(vacancy['salary']['from'], vacancy['salary']['to'])
-    return None
 
 
 def get_predict_rub_salary_sj(vacancy):
     if vacancy['currency'] == 'rub':
         return get_predict_salary(vacancy['payment_from'], vacancy['payment_to'])
-    return None
 
 
 def calculation_salaries_vacancies_hh(vacancies):
