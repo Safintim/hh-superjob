@@ -71,6 +71,8 @@ def get_statistics_language_hh(api_url, language):
     number_pages = 1
     while page < number_pages:
         response = requests.get(api_url, params=provide_params_hh(page, language)).json()
+        response.raise_for_status()
+
         number_pages = response['pages']
         page += 1
         vacancies_language = response['items']
@@ -99,6 +101,8 @@ def get_statistics_language_sj(api_url, secret_key, language):
         response = requests.get(api_url,
                                 headers=provide_headers_sj(secret_key),
                                 params=provide_params_sj(page, text=language))
+        response.raise_for_status()
+
         page += 1
         more = response.json()['more']
         vacancies_found = response.json()['total']
@@ -152,8 +156,14 @@ def main():
     secret_key = os.getenv('SECRET_KEY')
     programming_languages = ['Javascript', 'Java', 'Python', 'Ruby', 'Php', 'C++', 'C#', 'C', 'Go', 'Scala']
 
-    create_table('HeadHunter', get_data_from_head_hunter(programming_languages))
-    create_table('SuperJob', get_data_from_superjob(secret_key, programming_languages))
+    try:
+        create_table('HeadHunter', get_data_from_head_hunter(programming_languages))
+    except requests.exceptions.HTTPError as error:
+            exit("Can't get data from server HeadHunter:\n{0}".format(error))
+    try:
+        create_table('SuperJob', get_data_from_superjob(secret_key, programming_languages))
+    except requests.exceptions.HTTPError as error:
+            exit("Can't get data from server SuperJob:\n{0}".format(error))
 
 
 if __name__ == '__main__':
