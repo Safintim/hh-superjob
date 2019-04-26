@@ -27,10 +27,6 @@ def get_predict_rub_salary_sj(vacancy):
         return get_predict_salary(vacancy['payment_from'], vacancy['payment_to'])
 
 
-def calculation_salaries_vacancies_sj(vacancies):
-    return [get_predict_rub_salary_sj(vacancy) for vacancy in vacancies]
-
-
 def provide_params_hh(page, text=''):
     return {
         'text': 'Программист {}'.format(text),
@@ -108,7 +104,8 @@ def get_statistics_language_sj(api_url, secret_key, language):
         more = response.json()['more']
         vacancies_found = response.json()['total']
         vacancies_language = response.json()['objects']
-        all_salaries_vacancies.extend(calculation_salaries_vacancies_sj(vacancies_language))
+        salaries_vacancies = [get_predict_rub_salary_sj(vacancy) for vacancy in vacancies_language]
+        all_salaries_vacancies.extend(salaries_vacancies)
 
     is_salary = list(filter(lambda x: x is not None, all_salaries_vacancies))
     vacancies_processed = len(is_salary)
