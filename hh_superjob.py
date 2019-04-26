@@ -27,10 +27,6 @@ def get_predict_rub_salary_sj(vacancy):
         return get_predict_salary(vacancy['payment_from'], vacancy['payment_to'])
 
 
-def calculation_salaries_vacancies_hh(vacancies):
-    return [get_predict_rub_salary_hh(vacancy) for vacancy in vacancies]
-
-
 def calculation_salaries_vacancies_sj(vacancies):
     return [get_predict_rub_salary_sj(vacancy) for vacancy in vacancies]
 
@@ -84,7 +80,8 @@ def get_statistics_language_hh(api_url, language):
         vacancies_language = response['items']
         vacancies_found = response['found']
 
-        all_salaries_vacancies.extend(calculation_salaries_vacancies_hh(vacancies_language))
+        salaries_vacancies = [get_predict_rub_salary_hh(vacancy) for vacancy in vacancies_language]
+        all_salaries_vacancies.extend(salaries_vacancies)
 
     is_salary = list(filter(lambda x: x is not None, all_salaries_vacancies))
     vacancies_processed = len(is_salary)
