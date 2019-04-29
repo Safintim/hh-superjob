@@ -43,6 +43,6 @@ python3 hh_superjob.py
 ```
 
 ## Пример вывода :
-![Alt Text]()
+![Alt Text](http://ipic.su/img/img7/fs/hh_superjob2.1556540138.png)
 
 

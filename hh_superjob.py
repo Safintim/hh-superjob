@@ -3,13 +3,12 @@ import os
 from dotenv import load_dotenv
 from terminaltables import AsciiTable
 import argparse
-from pprint import pprint
 
 
 def create_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('city', nargs=1)
-    parser.add_argument('add', nargs=1)
+    parser.add_argument('-c', '--city', default='Москва')
+    parser.add_argument('-a', '--add', nargs='+', default=None)
     return parser
 
 
@@ -36,10 +35,10 @@ def get_predict_rub_salary_sj(vacancy):
         return get_predict_salary(vacancy['payment_from'], vacancy['payment_to'])
 
 
-def provide_params_hh(page, text=''):
+def provide_params_hh(page, area_id, text=''):
     return {
         'text': 'Программист {}'.format(text),
-        'area': 1,  # Moscow
+        'area': area_id,
         'period': 30,  # last month
         'page': page
     }
@@ -51,9 +50,9 @@ def provide_headers_sj(secret_key):
     }
 
 
-def provide_params_sj(page, text=''):
+def provide_params_sj(page, area_id, text=''):
     return {
-        'town': 4,  # Moscow
+        'town': area_id,
         'catalogues': 48,  # Develop, programing
         'count': 100,  # vacancies on page
         'page': page,
@@ -71,7 +70,7 @@ def create_dict_language_statistics(language, vac_found, vac_processed, avg_sala
     }
 
 
-def get_statistics_language_hh(api_url, language):
+def get_statistics_language_hh(api_url, area_id, language):
 
     vacancies_found = 0
     all_salaries_vacancies = []
@@ -79,13 +78,13 @@ def get_statistics_language_hh(api_url, language):
     page = 0
     number_pages = 1
     while page < number_pages:
-        response = requests.get(api_url, params=provide_params_hh(page, language)).json()
+        response = requests.get(api_url, params=provide_params_hh(page, area_id, language))
         response.raise_for_status()
 
-        number_pages = response['pages']
+        number_pages = response.json()['pages']
         page += 1
-        vacancies_language = response['items']
-        vacancies_found = response['found']
+        vacancies_language = response.json()['items']
+        vacancies_found = response.json()['found']
 
         salaries_vacancies = [get_predict_rub_salary_hh(vacancy) for vacancy in vacancies_language]
         all_salaries_vacancies.extend(salaries_vacancies)
@@ -100,7 +99,7 @@ def get_statistics_language_hh(api_url, language):
     return create_dict_language_statistics(language, vacancies_found, vacancies_processed, average_salary)
 
 
-def get_statistics_language_sj(api_url, secret_key, language):
+def get_statistics_language_sj(api_url, secret_key, area_id, language):
     vacancies_found = 0
     all_salaries_vacancies = []
 
@@ -109,7 +108,7 @@ def get_statistics_language_sj(api_url, secret_key, language):
     while more:
         response = requests.get(api_url,
                                 headers=provide_headers_sj(secret_key),
-                                params=provide_params_sj(page, text=language))
+                                params=provide_params_sj(page, area_id, text=language))
         response.raise_for_status()
 
         page += 1
@@ -130,20 +129,20 @@ def get_statistics_language_sj(api_url, secret_key, language):
     return create_dict_language_statistics(language, vacancies_found, vacancies_processed, average_salary)
 
 
-def get_data_from_head_hunter(programming_languages):
+def get_data_from_head_hunter(area_id, programming_languages):
     api_url = 'https://api.hh.ru/vacancies?'
     dict_languages_statistics = {}
     for language in programming_languages:
-        dict_languages_statistics.update(get_statistics_language_hh(api_url, language))
+        dict_languages_statistics.update(get_statistics_language_hh(api_url, area_id, language))
 
     return dict_languages_statistics
 
 
-def get_data_from_superjob(secret_key, programming_languages):
+def get_data_from_superjob(secret_key, area_id, programming_languages):
     api_url = 'https://api.superjob.ru/2.0/vacancies/'
     dict_languages_statistics = {}
     for language in programming_languages:
-        dict_languages_statistics.update(get_statistics_language_sj(api_url, secret_key, language))
+        dict_languages_statistics.update(get_statistics_language_sj(api_url, secret_key, area_id, language))
 
     return dict_languages_statistics
 
@@ -160,30 +159,50 @@ def create_table(title, languages_statistics):
     print(table.table)
 
 
-def pars_areas(data):
+def parse_areas_hh(data):
     id_name_areas = []
     if isinstance(data, dict):
         id = data.get('id', None)
         name = data.get('name', None)
         areas = data.get('areas', list())
-        id_name_areas = id_name_areas + [(id, name)] + pars_areas(areas)
+        id_name_areas = id_name_areas + [(id, name)] + parse_areas_hh(areas)
         return id_name_areas
     elif isinstance(data, list):
         area_exists = []
         for row in data:
-            area_exists = area_exists + pars_areas(row)
+            area_exists = area_exists + parse_areas_hh(row)
         return area_exists
     return id_name_areas
 
 
-def get_areas_id():
-    result = []
+def get_area_id_hh(area):
     url = 'https://api.hh.ru/salary_statistics/dictionaries/salary_areas'
-    response = requests.get(url).json()
-    for row in response:
-        result += pars_areas(row)
-    result.sort(key=lambda x: x[0])
-    return result
+    response = requests.get(url)
+    response.raise_for_status()
+    for row in response.json():
+        for id, name in parse_areas_hh(row):
+            if area.capitalize() == name:
+                return id
+
+
+def parse_areas_sj(data, area):
+    for town in data['towns']:
+        if area.capitalize() == town['title']:
+            return town['id']
+
+    for region in data['regions']:
+        for town in region['towns']:
+            if area.capitalize() == town['title']:
+                return town['id']
+
+
+def get_area_id_sj(area):
+    url = 'https://api.superjob.ru/2.0/regions/combined/'
+    response = requests.get(url)
+    response.raise_for_status()
+    response = response.json()[0]
+
+    return parse_areas_sj(response, area)
 
 
 def main():
@@ -191,20 +210,30 @@ def main():
     secret_key = os.getenv('SECRET_KEY')
     programming_languages = ['Javascript', 'Java', 'Python', 'Ruby', 'Php', 'C++', 'C#', 'C', 'Go', 'Scala']
 
-    # parser = create_parser()
-    # namespace = parser.parse_args()
-    # if namespace.add:
-    #     programming_languages.extend(namespace.add)
+    parser = create_parser()
+    namespace = parser.parse_args()
+    if namespace.add:
+        programming_languages.extend(namespace.add)
+
     try:
-        data_from_hh = get_data_from_head_hunter(programming_languages)
+        area_id_hh = get_area_id_hh(namespace.city)
+        if area_id_hh is None:
+            exit('City {} not found'.format(namespace.city))
+
+        data_from_hh = get_data_from_head_hunter(area_id_hh, programming_languages)
     except requests.exceptions.HTTPError as error:
         exit("Can't get data from server HeadHunter:\n{0}".format(error))
+
     try:
-        data_from_sj = get_data_from_superjob(secret_key, programming_languages)
+        area_id_sj = get_area_id_sj(namespace.city)
+        if area_id_sj is None:
+            exit('City {} not found'.format(namespace.city))
+
+        data_from_sj = get_data_from_superjob(secret_key, area_id_sj, programming_languages)
     except requests.exceptions.HTTPError as error:
         exit("Can't get data from server SuperJob:\n{0}".format(error))
 
-    data_from_hh = sorted(data_from_hh.items(), key=lambda x: x[1]['avg'], reverse=True)
+    data_from_hh = sorted(data_from_hh.items(), key=lambda x: x[1]['average_salary'], reverse=True)
     data_from_sj = sorted(data_from_sj.items(), key=lambda x: x[1]['average_salary'], reverse=True)
 
     create_table('HeadHunter', data_from_hh)
@@ -213,4 +242,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # get_areas_id()
