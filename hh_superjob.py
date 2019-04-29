@@ -2,6 +2,15 @@ import requests
 import os
 from dotenv import load_dotenv
 from terminaltables import AsciiTable
+import argparse
+from pprint import pprint
+
+
+def create_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('city', nargs=1)
+    parser.add_argument('add', nargs=1)
+    return parser
 
 
 def get_predict_salary(from_salary, to_salary):
@@ -139,16 +148,42 @@ def get_data_from_superjob(secret_key, programming_languages):
     return dict_languages_statistics
 
 
-def create_table(title, dict_languages_statistics):
+def create_table(title, languages_statistics):
 
     table_data = [
         ['Язык программирования', 'Найдено вакансий', 'Обработано вакансий', 'Средняя зарплата']
     ]
-    for language in dict_languages_statistics:
-        table_data.append([language] + list(dict_languages_statistics[language].values()))
+    for language, statistics in languages_statistics:
+        table_data.append([language] + list(statistics.values()))
 
     table = AsciiTable(table_data, title)
     print(table.table)
+
+
+def pars_areas(data):
+    id_name_areas = []
+    if isinstance(data, dict):
+        id = data.get('id', None)
+        name = data.get('name', None)
+        areas = data.get('areas', list())
+        id_name_areas = id_name_areas + [(id, name)] + pars_areas(areas)
+        return id_name_areas
+    elif isinstance(data, list):
+        area_exists = []
+        for row in data:
+            area_exists = area_exists + pars_areas(row)
+        return area_exists
+    return id_name_areas
+
+
+def get_areas_id():
+    result = []
+    url = 'https://api.hh.ru/salary_statistics/dictionaries/salary_areas'
+    response = requests.get(url).json()
+    for row in response:
+        result += pars_areas(row)
+    result.sort(key=lambda x: x[0])
+    return result
 
 
 def main():
@@ -156,15 +191,26 @@ def main():
     secret_key = os.getenv('SECRET_KEY')
     programming_languages = ['Javascript', 'Java', 'Python', 'Ruby', 'Php', 'C++', 'C#', 'C', 'Go', 'Scala']
 
+    # parser = create_parser()
+    # namespace = parser.parse_args()
+    # if namespace.add:
+    #     programming_languages.extend(namespace.add)
     try:
-        create_table('HeadHunter', get_data_from_head_hunter(programming_languages))
+        data_from_hh = get_data_from_head_hunter(programming_languages)
     except requests.exceptions.HTTPError as error:
-            exit("Can't get data from server HeadHunter:\n{0}".format(error))
+        exit("Can't get data from server HeadHunter:\n{0}".format(error))
     try:
-        create_table('SuperJob', get_data_from_superjob(secret_key, programming_languages))
+        data_from_sj = get_data_from_superjob(secret_key, programming_languages)
     except requests.exceptions.HTTPError as error:
-            exit("Can't get data from server SuperJob:\n{0}".format(error))
+        exit("Can't get data from server SuperJob:\n{0}".format(error))
+
+    data_from_hh = sorted(data_from_hh.items(), key=lambda x: x[1]['avg'], reverse=True)
+    data_from_sj = sorted(data_from_sj.items(), key=lambda x: x[1]['average_salary'], reverse=True)
+
+    create_table('HeadHunter', data_from_hh)
+    create_table('SuperJob', data_from_sj)
 
 
 if __name__ == '__main__':
     main()
+    # get_areas_id()
