@@ -74,6 +74,11 @@ python3 hh_superjob.py
 ```
 ![Alt Text](http://ipic.su/img/img7/fs/hh_superjob2.1556540138.png)
 
+```sh
+python3 hh_superjob.py -c 'Нижний Новгород' -nw Python Java R PHP Ruby -hh
+```
+![Alt Text](http://ipic.su/img/img7/fs/4.1556552654.png)
+
 
 ```sh
 python3 hh_superjob.py -c Казань
