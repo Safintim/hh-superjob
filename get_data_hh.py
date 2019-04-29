@@ -1,6 +1,7 @@
 from tools import get_predict_salary, create_dict_language_statistics
 import requests
 
+
 def get_predict_rub_salary_hh(vacancy):
     if vacancy['salary'] and vacancy['salary']['currency'] == 'RUR':
         return get_predict_salary(vacancy['salary']['from'], vacancy['salary']['to'])
@@ -80,4 +81,3 @@ def get_data_from_head_hunter(city, programming_languages):
             dict_languages_statistics.update(get_statistics_language_hh(api_url, area_id, language))
 
         return dict_languages_statistics
-
