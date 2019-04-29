@@ -2,15 +2,6 @@ import requests
 import os
 from dotenv import load_dotenv
 from terminaltables import AsciiTable
-import argparse
-from pprint import pprint
-
-
-def create_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('city', nargs=1)
-    parser.add_argument('add', nargs=1)
-    return parser
 
 
 def get_predict_salary(from_salary, to_salary):
@@ -79,13 +70,13 @@ def get_statistics_language_hh(api_url, language):
     page = 0
     number_pages = 1
     while page < number_pages:
-        response = requests.get(api_url, params=provide_params_hh(page, language)).json()
+        response = requests.get(api_url, params=provide_params_hh(page, language))
         response.raise_for_status()
 
-        number_pages = response['pages']
+        number_pages = response.json()['pages']
         page += 1
-        vacancies_language = response['items']
-        vacancies_found = response['found']
+        vacancies_language = response.json()['items']
+        vacancies_found = response.json()['found']
 
         salaries_vacancies = [get_predict_rub_salary_hh(vacancy) for vacancy in vacancies_language]
         all_salaries_vacancies.extend(salaries_vacancies)
@@ -191,10 +182,6 @@ def main():
     secret_key = os.getenv('SECRET_KEY')
     programming_languages = ['Javascript', 'Java', 'Python', 'Ruby', 'Php', 'C++', 'C#', 'C', 'Go', 'Scala']
 
-    # parser = create_parser()
-    # namespace = parser.parse_args()
-    # if namespace.add:
-    #     programming_languages.extend(namespace.add)
     try:
         data_from_hh = get_data_from_head_hunter(programming_languages)
     except requests.exceptions.HTTPError as error:
@@ -204,7 +191,7 @@ def main():
     except requests.exceptions.HTTPError as error:
         exit("Can't get data from server SuperJob:\n{0}".format(error))
 
-    data_from_hh = sorted(data_from_hh.items(), key=lambda x: x[1]['avg'], reverse=True)
+    data_from_hh = sorted(data_from_hh.items(), key=lambda x: x[1]['average_salary'], reverse=True)
     data_from_sj = sorted(data_from_sj.items(), key=lambda x: x[1]['average_salary'], reverse=True)
 
     create_table('HeadHunter', data_from_hh)
@@ -213,4 +200,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # get_areas_id()
+
