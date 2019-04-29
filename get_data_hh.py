@@ -67,7 +67,7 @@ def get_area_id_hh(area):
     response.raise_for_status()
     for row in response.json():
         for id, name in parse_areas_hh(row):
-            if area.capitalize() == name:
+            if area.lower() == name.lower():
                 return id
 
 

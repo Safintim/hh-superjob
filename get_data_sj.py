@@ -60,7 +60,7 @@ def parse_areas_sj(data, area):
 
     for region in data['regions']:
         for town in region['towns']:
-            if area.capitalize() == town['title']:
+            if area.lower() == town['title'].lower():
                 return town['id']
 
 
