@@ -10,7 +10,8 @@ from get_data_sj import get_data_from_superjob
 def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--city', default='Москва')
-    parser.add_argument('-a', '--add', nargs='+', default=None)
+    parser.add_argument('-a', '--add', nargs='+')
+    parser.add_argument('-nw', '--new', nargs='+')
     return parser
 
 
@@ -35,6 +36,9 @@ def main():
     namespace = parser.parse_args()
     if namespace.add:
         programming_languages.extend(namespace.add)
+    elif namespace.new:
+        programming_languages = namespace.new
+
     try:
         data_from_hh = get_data_from_head_hunter(namespace.city, programming_languages)
     except requests.exceptions.HTTPError as error:
