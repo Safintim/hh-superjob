@@ -12,6 +12,7 @@ def create_parser():
     parser.add_argument('-c', '--city', default='Москва')
     parser.add_argument('-a', '--add', nargs='+')
     parser.add_argument('-nw', '--new', nargs='+')
+    parser.add_argument('-hh', '--only_hh', action='store_true', default=False)
     return parser
 
 
@@ -27,6 +28,32 @@ def create_table(title, languages_statistics):
     print(table.table)
 
 
+def fetch_headhunter(city, programming_languages):
+    try:
+        data_from_hh = get_data_from_head_hunter(city, programming_languages)
+    except requests.exceptions.HTTPError as error:
+        exit("Can't get data from server HeadHunter:\n{0}".format(error))
+
+    if not data_from_hh:
+        exit('The city {} is not found on the HeadHunter'.format(city))
+
+    data_from_hh = sorted(data_from_hh.items(), key=lambda x: x[1]['average_salary'], reverse=True)
+    create_table('HeadHunter', data_from_hh)
+
+
+def fetch_superjob(secret_key, city, programming_languages):
+    try:
+        data_from_sj = get_data_from_superjob(secret_key, city, programming_languages)
+    except requests.exceptions.HTTPError as error:
+        exit("Can't get data from server SuperJob:\n{0}".format(error))
+
+    if not data_from_sj:
+        exit('The city {} is not found on the SuperJob'.format(city))
+
+    data_from_sj = sorted(data_from_sj.items(), key=lambda x: x[1]['average_salary'], reverse=True)
+    create_table('SuperJob', data_from_sj)
+
+
 def main():
     load_dotenv()
     secret_key = os.getenv('SECRET_KEY')
@@ -39,25 +66,13 @@ def main():
     elif namespace.new:
         programming_languages = namespace.new
 
-    try:
-        data_from_hh = get_data_from_head_hunter(namespace.city, programming_languages)
-    except requests.exceptions.HTTPError as error:
-        exit("Can't get data from server HeadHunter:\n{0}".format(error))
-    try:
-        data_from_sj = get_data_from_superjob(secret_key, namespace.city, programming_languages)
-    except requests.exceptions.HTTPError as error:
-        exit("Can't get data from server SuperJob:\n{0}".format(error))
+    if namespace.only_hh:
+        fetch_headhunter(namespace.city, programming_languages)
+    else:
+        fetch_headhunter(namespace.city, programming_languages)
+        fetch_superjob(secret_key, namespace.city, programming_languages)
 
-    if not data_from_hh:
-        exit('The city {} is not found on the HeadHunter'.format(namespace.city))
-    elif not data_from_sj:
-        exit('The city {} is not found on the SuperJob'.format(namespace.city))
 
-    data_from_hh = sorted(data_from_hh.items(), key=lambda x: x[1]['average_salary'], reverse=True)
-    data_from_sj = sorted(data_from_sj.items(), key=lambda x: x[1]['average_salary'], reverse=True)
-
-    create_table('HeadHunter', data_from_hh)
-    create_table('SuperJob', data_from_sj)
 
 
 if __name__ == '__main__':
