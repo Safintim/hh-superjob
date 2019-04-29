@@ -61,6 +61,7 @@ superjob требует регистрацию приложения:
 
 ```sh
 python3 hh_superjob.py
+python3 hh_superjob.py -c 'Нижний Новгород' -nw Python Java R PHP Ruby -hh
 python3 hh_superjob.py -c Казань
 python3 hh_superjob.py -c Казань -a R F#
 python3 hh_superjob.py -c Казань -nw Python PHP Java C++
